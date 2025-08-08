@@ -1,0 +1,8 @@
+# Certificats locaux
+traefik/certs/*
+!traefik/certs/.gitkeep
+
+# Certificats générés par mkcert
+*.crt
+*.key
+*.pem

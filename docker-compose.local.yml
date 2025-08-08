@@ -1,0 +1,72 @@
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.filename=/dynamic/dynamic.yml
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic.yml:/dynamic/dynamic.yml:ro
+      - ./traefik/certs:/certs:ro
+    networks:
+      - planning-network
+    restart: always
+
+  frontend:
+    build: ./planningFront
+    container_name: planningFrontend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.front.rule=Host(`planeasy.localhost`)
+      - traefik.http.routers.front.entrypoints=websecure
+      - traefik.http.routers.front.tls=true
+      - traefik.http.services.front.loadbalancer.server.port=80
+    depends_on:
+      - backend
+    networks:
+      - planning-network
+    restart: always
+
+  backend:
+    build: ./planningBack
+    container_name: planningBackend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`planeasy.localhost`) && PathPrefix(`/api`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls=true
+      - traefik.http.services.api.loadbalancer.server.port=8000
+    volumes:
+      - ./planningBack:/app
+    depends_on:
+      - db
+    networks:
+      - planning-network
+    restart: always
+
+  db:
+    image: postgres:17
+    container_name: planningDb
+    environment:
+      POSTGRES_DB: planningback
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - planning-network
+    restart: always
+
+networks:
+  planning-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

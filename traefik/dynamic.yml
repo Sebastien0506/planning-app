@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /certs/planeasy.localhost.pem
+      keyFile: /certs/planeasy.localhost-key.pem

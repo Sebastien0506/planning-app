@@ -1,0 +1,6 @@
+[submodule "planningFront"]
+	path = planningFront
+	url = https://github.com/Sebastien0506/planningFront
+[submodule "planningBack"]
+	path = planningBack
+	url = https://github.com/Sebastien0506/back-planning
