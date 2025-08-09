@@ -10,7 +10,7 @@ jobs:
     name: Backend (Django) - lint & tests
     runs-on: ubuntu-latest
 
-    # ✅ Le job s'exécute dans un conteneur Python → même réseau que "db"
+    # le job tourne dans le même réseau que le service "db"
     container: python:3.11
 
     services:
@@ -20,10 +20,6 @@ jobs:
           POSTGRES_DB: planningback
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: admin
-        # (les ports ne sont pas nécessaires quand on est dans le même réseau,
-        # mais on peut les laisser)
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd="pg_isready -U postgres -d planningback -h db"
           --health-interval=5s
@@ -57,8 +53,6 @@ jobs:
 
       - name: Installer les dépendances backend
         run: pip install -r planningBack/requirements.txt
-
-      # ✅ plus besoin du test TCP manuel, on fait confiance au healthcheck
 
       - name: Créer .env pour la CI
         run: |
