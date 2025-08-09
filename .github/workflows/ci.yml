@@ -10,13 +10,18 @@ jobs:
     name: Backend (Django) - lint & tests
     runs-on: ubuntu-latest
 
+    # ✅ Le job s'exécute dans un conteneur Python → même réseau que "db"
+    container: python:3.11
+
     services:
       db:
         image: postgres:17
         env:
           POSTGRES_DB: planningback
-          POSTGRES_USER: postgres       # <-- corrigé
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: admin
+        # (les ports ne sont pas nécessaires quand on est dans le même réseau,
+        # mais on peut les laisser)
         ports:
           - 5432:5432
         options: >-
@@ -32,7 +37,7 @@ jobs:
       ALLOWED_HOSTS: "*"
       CSRF_TRUSTED_ORIGINS: "http://localhost"
       DB_NAME: planningback
-      DB_USER: postgres                # <-- corrigé
+      DB_USER: postgres
       DB_PASSWORD: admin
       DB_HOST: db
       DB_PORT: "5432"
@@ -50,22 +55,10 @@ jobs:
           ls -la planningBack || true
           ls -la planningFront || true
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - name: Installer les dépendances backend
         run: pip install -r planningBack/requirements.txt
 
-      - name: Attendre que Postgres réponde
-        run: |
-          for i in {1..30}; do
-            (echo > /dev/tcp/db/5432) >/dev/null 2>&1 && echo "PG OK" && exit 0
-            echo "PG pas prêt encore..."
-            sleep 1
-          done
-          echo "PG n'a pas démarré à temps" >&2
-          exit 1
+      # ✅ plus besoin du test TCP manuel, on fait confiance au healthcheck
 
       - name: Créer .env pour la CI
         run: |
@@ -84,7 +77,7 @@ jobs:
       - name: Vérifier Django
         working-directory: planningBack
         run: python manage.py check
-      
+
       - name: Installer les libs de test
         run: pip install pytest pytest-django pytest-cov
 
