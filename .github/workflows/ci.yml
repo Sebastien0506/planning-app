@@ -11,14 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive   # <<< Très important pour télécharger les sous-modules
+          fetch-depth: 0
+      - name: Afficher l’arborescence
+        run: |
+          pwd
+          ls -la
+          ls -la planningBack || true
+          ls -la planningFront || true
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install deps
+      - name: Installer les dépendances backend
         run: pip install -r planningBack/requirements.txt
 
-      - name: Django system check
+      - name: Vérifier Django
         run: |
           cd planningBack
           python manage.py check
@@ -31,13 +41,25 @@ jobs:
         working-directory: planningFront
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Afficher l’arborescence
+        run: |
+          pwd
+          ls -la
+          ls -la planningFront || true
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      # Pas de package-lock.json → on utilise npm install
-      - name: Install deps
+          cache: "npm"
+          cache-dependency-path: planningFront/package-lock.json
+          
+      # Pas de package-lock.json → npm install au lieu de npm ci
+      - name: Installer les dépendances frontend
         run: npm install
-      - name: Lint (non bloquant si tu n'as pas encore configuré)
+      - name: Lint (non bloquant)
         run: npm run lint || echo "lint warnings"
       - name: Build
         run: npm run build --if-present
