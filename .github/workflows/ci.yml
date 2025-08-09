@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
+      db:   # <- renommé de postgres à db
         image: postgres:17
         env:
           POSTGRES_DB: planningback
@@ -20,7 +20,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U admin -d planningback -h 127.0.0.1"
+          --health-cmd="pg_isready -U admin -d planningback -h db"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -31,11 +31,10 @@ jobs:
       DEBUG: "True"
       ALLOWED_HOSTS: "*"
       CSRF_TRUSTED_ORIGINS: "http://localhost"
-      DATABASE_URL: postgres://admin:admin@127.0.0.1:5432/planningback
       DB_NAME: planningback
       DB_USER: admin
       DB_PASSWORD: admin
-      DB_HOST: 127.0.0.1
+      DB_HOST: db      # <- correspond à ton settings.py
       DB_PORT: "5432"
 
     steps:
@@ -61,25 +60,24 @@ jobs:
       - name: Attendre que Postgres réponde
         run: |
           for i in {1..30}; do
-            (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1 && echo "PG OK" && exit 0
+            (echo > /dev/tcp/db/5432) >/dev/null 2>&1 && echo "PG OK" && exit 0
             echo "PG pas prêt encore..."
             sleep 1
           done
           echo "PG n'a pas démarré à temps" >&2
           exit 1
 
-      - name: Créer .env pour la CI (forcer 127.0.0.1)
+      - name: Créer .env pour la CI
         run: |
           cat > planningBack/.env << 'EOF'
           SECRET_KEY=ci-secret-key
           DEBUG=True
           ALLOWED_HOSTS=*
           CSRF_TRUSTED_ORIGINS=http://localhost
-          DATABASE_URL=postgres://admin:admin@127.0.0.1:5432/planningback
           DB_NAME=planningback
           DB_USER=admin
           DB_PASSWORD=admin
-          DB_HOST=127.0.0.1
+          DB_HOST=db
           DB_PORT=5432
           EOF
 
