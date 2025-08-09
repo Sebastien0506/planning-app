@@ -12,8 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive   # <<< Très important pour télécharger les sous-modules
+          submodules: recursive
           fetch-depth: 0
+
       - name: Afficher l’arborescence
         run: |
           pwd
@@ -24,6 +25,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Créer .env pour la CI
+        run: |
+          cat > planningBack/.env << 'EOF'
+          SECRET_KEY=ci-secret-key
+          DEBUG=True
+          DATABASE_URL=sqlite:///db.sqlite3
+          ALLOWED_HOSTS=*
+          CSRF_TRUSTED_ORIGINS=https://planeasy.localhost
+          EOF
 
       - name: Installer les dépendances backend
         run: pip install -r planningBack/requirements.txt
@@ -44,6 +55,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
       - name: Afficher l’arborescence
         run: |
           pwd
@@ -55,11 +67,13 @@ jobs:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: planningFront/package-lock.json
-          
+
       # Pas de package-lock.json → npm install au lieu de npm ci
       - name: Installer les dépendances frontend
         run: npm install
+
       - name: Lint (non bloquant)
         run: npm run lint || echo "lint warnings"
+
       - name: Build
         run: npm run build --if-present
