@@ -9,6 +9,22 @@ jobs:
   backend:
     name: Backend (Django) - lint & tests
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: planningback
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U admin -d planningback"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,14 +42,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      # ⚠️ On met un .env qui cible Postgres (pas SQLite)
       - name: Créer .env pour la CI
         run: |
           cat > planningBack/.env << 'EOF'
           SECRET_KEY=ci-secret-key
           DEBUG=True
-          DATABASE_URL=sqlite:///db.sqlite3
           ALLOWED_HOSTS=*
           CSRF_TRUSTED_ORIGINS=https://planeasy.localhost
+          DATABASE_URL=postgres://admin:admin@127.0.0.1:5432/planningback
+          DB_NAME=planningback
+          DB_USER=admin
+          DB_PASSWORD=admin
+          DB_HOST=127.0.0.1
+          DB_PORT=5432
           EOF
 
       - name: Installer les dépendances backend
@@ -51,6 +73,12 @@ jobs:
         working-directory: planningBack
         env:
           DJANGO_SETTINGS_MODULE: planningBack.settings
+          DATABASE_URL: postgres://admin:admin@127.0.0.1:5432/planningback
+          DB_NAME: planningback
+          DB_USER: admin
+          DB_PASSWORD: admin
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
         run: |
           pytest -q --maxfail=1 --disable-warnings \
             --cov=. --cov-report=xml:coverage.xml \
@@ -88,7 +116,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: planningFront/package-lock.json
 
-      # Pas de package-lock.json → npm install au lieu de npm ci
       - name: Installer les dépendances frontend
         run: npm install
 
