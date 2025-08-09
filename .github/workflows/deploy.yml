@@ -46,6 +46,17 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/planning-app-new
+
+            # 1) Créer le .env du backend (ligne unique)
+            echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" > planningBack/.env
+
+            # 2) Redémarrer proprement (ignore l'erreur si pas encore créé)
+            docker compose down || true
+
+            # 3) Build & run
             docker compose up -d --build
+
+            # 4) Migrations
             docker compose exec -T planningBackend python manage.py migrate --noinput
