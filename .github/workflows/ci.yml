@@ -39,10 +39,30 @@ jobs:
       - name: Installer les dépendances backend
         run: pip install -r planningBack/requirements.txt
 
+      - name: Installer libs de test
+        run: pip install pytest pytest-django pytest-cov
+
       - name: Vérifier Django
         run: |
           cd planningBack
           python manage.py check
+
+      - name: Lancer les tests (JUnit + coverage)
+        working-directory: planningBack
+        env:
+          DJANGO_SETTINGS_MODULE: planningBack.settings
+        run: |
+          pytest -q --maxfail=1 --disable-warnings \
+            --cov=. --cov-report=xml:coverage.xml \
+            --junitxml=pytest-junit.xml
+
+      - name: Publier les rapports de test
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-rapports
+          path: |
+            planningBack/pytest-junit.xml
+            planningBack/coverage.xml
 
   frontend:
     name: Frontend (Angular) - lint & build
