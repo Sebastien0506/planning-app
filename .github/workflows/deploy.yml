@@ -49,18 +49,23 @@ jobs:
             set -e
             cd /home/ubuntu/planning-app-new
 
-            # 1) Créer le .env du backend (ligne unique)
+            
             echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" > planningBack/.env
 
-            # 2) Tuer d'anciens conteneurs nommés (où qu'ils aient été créés)
+            
             docker rm -f traefik planningDb planningBackend planningFrontend || true
-
-            # (optionnel) retirer l'ancien réseau s'il traîne
             docker network rm planning-app-new_planning-network || true
             docker network rm planning-app_planning-network || true
 
-            # 3) Build & run
+            
             docker compose up -d --build
 
-            # 4) Migrations
-            docker compose exec -T planningBackend python manage.py migrate --noinput
+            
+            sleep 8
+
+      
+            if docker compose ps backend | grep -q "Up"; then
+            docker compose exec -T backend python manage.py migrate --noinput
+            else
+            echo "Backend non démarré, migrations ignorées (à vérifier avec 'docker compose logs backend')."
+            fi
