@@ -76,6 +76,9 @@ jobs:
       - name: Vérifier Django
         working-directory: planningBack
         run: python manage.py check
+      
+      - name: Installer les libs de test
+        run: pip install pytest pytest-django pytest-cov
 
       - name: Lancer les tests (JUnit + coverage)
         working-directory: planningBack
