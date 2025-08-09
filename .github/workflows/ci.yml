@@ -20,10 +20,28 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U admin -d planningback"
-          --health-interval=10s
+          --health-cmd="pg_isready -U admin -d planningback -h 127.0.0.1"
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=20
+
+    env:
+      DJANGO_SETTINGS_MODULE: planningBack.settings
+      SECRET_KEY: ci-secret-key
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+      CSRF_TRUSTED_ORIGINS: "https://planeasy.localhost"
+      DATABASE_URL: postgres://admin:admin@127.0.0.1:5432/planningback
+      DB_NAME: planningback
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: admin
+      PGPASSWORD: admin
+      PGDATABASE: planningback
 
     steps:
       - uses: actions/checkout@v4
@@ -42,43 +60,25 @@ jobs:
         with:
           python-version: "3.11"
 
-      # ⚠️ On met un .env qui cible Postgres (pas SQLite)
-      - name: Créer .env pour la CI
-        run: |
-          cat > planningBack/.env << 'EOF'
-          SECRET_KEY=ci-secret-key
-          DEBUG=True
-          ALLOWED_HOSTS=*
-          CSRF_TRUSTED_ORIGINS=https://planeasy.localhost
-          DATABASE_URL=postgres://admin:admin@127.0.0.1:5432/planningback
-          DB_NAME=planningback
-          DB_USER=admin
-          DB_PASSWORD=admin
-          DB_HOST=127.0.0.1
-          DB_PORT=5432
-          EOF
-
       - name: Installer les dépendances backend
         run: pip install -r planningBack/requirements.txt
 
-      - name: Installer libs de test
-        run: pip install pytest pytest-django pytest-cov
+      - name: Attendre que Postgres réponde
+        run: |
+          for i in {1..30}; do
+            (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1 && echo "PG OK" && exit 0
+            echo "PG pas prêt encore..."
+            sleep 1
+          done
+          echo "PG n'a pas démarré à temps" >&2
+          exit 1
 
       - name: Vérifier Django
-        run: |
-          cd planningBack
-          python manage.py check
+        working-directory: planningBack
+        run: python manage.py check
 
       - name: Lancer les tests (JUnit + coverage)
         working-directory: planningBack
-        env:
-          DJANGO_SETTINGS_MODULE: planningBack.settings
-          DATABASE_URL: postgres://admin:admin@127.0.0.1:5432/planningback
-          DB_NAME: planningback
-          DB_USER: admin
-          DB_PASSWORD: admin
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
         run: |
           pytest -q --maxfail=1 --disable-warnings \
             --cov=. --cov-report=xml:coverage.xml \
