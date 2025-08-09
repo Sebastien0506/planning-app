@@ -11,16 +11,16 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      db:   # <- renommé de postgres à db
+      db:
         image: postgres:17
         env:
           POSTGRES_DB: planningback
-          POSTGRES_USER: admin
+          POSTGRES_USER: postgres       # <-- corrigé
           POSTGRES_PASSWORD: admin
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U admin -d planningback -h db"
+          --health-cmd="pg_isready -U postgres -d planningback -h db"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -32,9 +32,9 @@ jobs:
       ALLOWED_HOSTS: "*"
       CSRF_TRUSTED_ORIGINS: "http://localhost"
       DB_NAME: planningback
-      DB_USER: admin
+      DB_USER: postgres                # <-- corrigé
       DB_PASSWORD: admin
-      DB_HOST: db      # <- correspond à ton settings.py
+      DB_HOST: db
       DB_PORT: "5432"
 
     steps:
@@ -75,7 +75,7 @@ jobs:
           ALLOWED_HOSTS=*
           CSRF_TRUSTED_ORIGINS=http://localhost
           DB_NAME=planningback
-          DB_USER=admin
+          DB_USER=postgres
           DB_PASSWORD=admin
           DB_HOST=db
           DB_PORT=5432
