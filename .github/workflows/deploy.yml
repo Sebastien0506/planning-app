@@ -52,8 +52,12 @@ jobs:
             # 1) Créer le .env du backend (ligne unique)
             echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" > planningBack/.env
 
-            # 2) Redémarrer proprement (ignore l'erreur si pas encore créé)
-            docker compose down || true
+            # 2) Tuer d'anciens conteneurs nommés (où qu'ils aient été créés)
+            docker rm -f traefik planningDb planningBackend planningFrontend || true
+
+            # (optionnel) retirer l'ancien réseau s'il traîne
+            docker network rm planning-app-new_planning-network || true
+            docker network rm planning-app_planning-network || true
 
             # 3) Build & run
             docker compose up -d --build
