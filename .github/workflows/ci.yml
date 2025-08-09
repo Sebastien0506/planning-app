@@ -30,18 +30,13 @@ jobs:
       SECRET_KEY: ci-secret-key
       DEBUG: "True"
       ALLOWED_HOSTS: "*"
-      CSRF_TRUSTED_ORIGINS: "https://planeasy.localhost"
+      CSRF_TRUSTED_ORIGINS: "http://localhost"
       DATABASE_URL: postgres://admin:admin@127.0.0.1:5432/planningback
       DB_NAME: planningback
       DB_USER: admin
       DB_PASSWORD: admin
       DB_HOST: 127.0.0.1
       DB_PORT: "5432"
-      PGHOST: 127.0.0.1
-      PGPORT: "5432"
-      PGUSER: admin
-      PGPASSWORD: admin
-      PGDATABASE: planningback
 
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +67,21 @@ jobs:
           done
           echo "PG n'a pas démarré à temps" >&2
           exit 1
+
+      - name: Créer .env pour la CI (forcer 127.0.0.1)
+        run: |
+          cat > planningBack/.env << 'EOF'
+          SECRET_KEY=ci-secret-key
+          DEBUG=True
+          ALLOWED_HOSTS=*
+          CSRF_TRUSTED_ORIGINS=http://localhost
+          DATABASE_URL=postgres://admin:admin@127.0.0.1:5432/planningback
+          DB_NAME=planningback
+          DB_USER=admin
+          DB_PASSWORD=admin
+          DB_HOST=127.0.0.1
+          DB_PORT=5432
+          EOF
 
       - name: Vérifier Django
         working-directory: planningBack
