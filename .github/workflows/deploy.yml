@@ -2,28 +2,35 @@ name: CD (Deploy to VPS)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout repo avec sous-modules
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
-      - name: Préparer dossier sur le VPS
+      - name: Vérifier la présence des Dockerfile
+        run: |
+          ls -R planningBack | grep Dockerfile || echo "Dockerfile backend manquant"
+          ls -R planningFront | grep Dockerfile || echo "Dockerfile frontend manquant"
+
+      - name: Déploiement SSH - préparer dossier
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_KEY }}
           script: |
-            set -e
             rm -rf /home/ubuntu/planning-app-new
             mkdir -p /home/ubuntu/planning-app-new
 
-      - name: Copier projet sur le VPS
+      - name: Copier projet vers VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -32,28 +39,13 @@ jobs:
           source: "./"
           target: "/home/ubuntu/planning-app-new"
 
-      - name: Vérifier arborescence sur le VPS
+      - name: Lancer Docker Compose
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_KEY }}
           script: |
-            echo "=== Contenu de /home/ubuntu/planning-app-new ==="
-            ls -la /home/ubuntu/planning-app-new
-
-      - name: Déployer avec Docker Compose
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_KEY }}
-          script: |
-            set -e
             cd /home/ubuntu/planning-app-new
-            if [ ! -f docker-compose.yml ]; then
-              echo "❌ ERREUR : docker-compose.yml introuvable dans $(pwd)"
-              exit 1
-            fi
             docker compose up -d --build
             docker compose exec -T planningBackend python manage.py migrate --noinput
