@@ -20,9 +20,8 @@ jobs:
           key: ${{ secrets.VPS_KEY }}
           script: |
             set -e
-            cd /home/ubuntu
-            rm -rf planning-app-new
-            mkdir planning-app-new
+            rm -rf /home/ubuntu/planning-app-new
+            mkdir -p /home/ubuntu/planning-app-new
 
       - name: Copier projet sur le VPS
         uses: appleboy/scp-action@v0.1.7
@@ -33,7 +32,17 @@ jobs:
           source: "./"
           target: "/home/ubuntu/planning-app-new"
 
-      - name: Lancer docker-compose
+      - name: Vérifier arborescence sur le VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          script: |
+            echo "=== Contenu de /home/ubuntu/planning-app-new ==="
+            ls -la /home/ubuntu/planning-app-new
+
+      - name: Déployer avec Docker Compose
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -42,6 +51,9 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/planning-app-new
-            docker compose pull
+            if [ ! -f docker-compose.yml ]; then
+              echo "❌ ERREUR : docker-compose.yml introuvable dans $(pwd)"
+              exit 1
+            fi
             docker compose up -d --build
             docker compose exec -T planningBackend python manage.py migrate --noinput
