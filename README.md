@@ -10,7 +10,8 @@ Application de gestion de planning avec **Django** (backend), **Angular** (front
 
 ---
 
-##  Technologies utilisées
+
+## Technologies utilisées
 - **Backend** : [Django](https://www.djangoproject.com/) + Django REST Framework
 - **Frontend** : [Angular](https://angular.io/)
 - **Proxy** : [Traefik](https://traefik.io/) (SSL + routage)
@@ -19,7 +20,25 @@ Application de gestion de planning avec **Django** (backend), **Angular** (front
 - **CI/CD** : GitHub Actions
 
 ---
+## Déploiement avec GitHub Actions
+Le projet utilise une pipeline CI/CD automatisé avec GitHub Actions.
 
+### CI (Intégration Continue)
+- Déclenchée à chaque push ou pull request sur main
+- Lancement des tests backend avec Pytest
+- Lancement des tests frontend avec Cypress
+- Vérification du linting pour Angular et Python
+
+### CD (Déploiement Continu)
+- Construction des images Docker pour :
+- Backend Django
+- Frontend Angular
+- Traefik (SSL automatique via Let's Encrypt)
+- Connexion au serveur VPS via SSH
+- Mise à jour des services :
+- docker-compose pull
+- docker-compose up -d
+---
 ## Installation en local
 
 ### Pré-requis
@@ -42,3 +61,7 @@ docker compose up -d --build
 
 # 5. Appliquer les migrations Django
 docker compose exec planningBackend python manage.py migrate --noinput
+
+
+
+
